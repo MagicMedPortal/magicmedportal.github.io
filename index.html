@@ -35,16 +35,19 @@
             </div>
             <div class="cards">
 
-                            <p class="header2"><strong>PROJECT CHARACTERISTICS</strong></p>
+                <p class="header">REQUIREMENTS</p>
+                            <p><p>I have not included the Serial API that I used to test out Arduino. However, you can use Chrome's Serial API that
+                                will allow Arduino to communicate through the Serial Port and your web app to listen.</p>
                             
-                            
+                            <p>This tool is platform agnostic. I designed it to work on <i>any</i> system, including Mobile devices. This was built
+                                on a Raspberry Pi 4 and Raspberry Pi Touchscreen
                             <div id="blocks">
                                 <div class="cards2">
                             
                                     <span class="material-symbols-rounded" style="color: white;">
                                         code_blocks
                                     </span>
-                                    <p><strong>OPEN SOURCE AND LIGHTWEIGHT</strong></p>
+                                    <p><strong>UI: JAVASCRIPT AND <a href="https://mui.com">MUI (REACT JS)</a></strong></p>
                             
                                 </div>
                             
@@ -53,7 +56,7 @@
                                     <span class="material-symbols-rounded" style="color: white">
                                         play_circle
                                     </span>
-                                    <p><strong>ENHANCED WITH IMAGE PROCESSING</strong></p>
+                                    <p><strong><a href="https://p5js.org">IMAGE PROCESSING: P5JS FOR REACT</a></strong></p>
                             
                                 </div>
                             
@@ -62,18 +65,217 @@
                                     <span class="material-symbols-rounded" style="color: white">
                                         deployed_code
                                     </span>
-                                    <p><strong>DEPLOYABLE / SCALABLE</strong></p>
+                                    <p><strong>OCR AND PARSING: <a href="https://tesseract.projectnaptha.com/">TESSERACTJS</a> AND CHATGPT</strong></p>
                             
                                 </div>
-                            
                             
                             </div>
 
 
 
             </div>
-            <div class="cards">3</div>
-            <div class="cards">4</div>
+            <div class="cards">
+
+            <p class="header">HARDWARE</p>
+
+            <p>If you want to build it exactly to my specifications, here is what the finished product looks like:</p>
+
+            <p></p>
+
+
+            </div>
+            <div class="cards"><p class="header">THE SOURCE CODE, PART I</p>
+
+                If you're ready to get started, follow along! <a href="https://github.com/MagicMedPortal/patient"></a>You can also download the source code for the Patient view, because that is where the meat is! I have also included detailed instructions within the readme on how to demo this site. 
+
+                <p class="header2">The Patient View Hierarcy</p>
+
+                <p>In the next section, I'll walk through three main files that are at the heart of this project: <b>PatientInfo</b>, <b>Image</b> and <b>Vitals</b></b> <br/>
+                For now, let's just go over what files you see in the <code>/src</code> folder. If you're visual, click <a href="./SRC.png">here</a> to see a screesnshot. </p> 
+
+               <ol>
+                <li><b>App.js</b>: This is the actual front part of the UI. If you're unfamiliar with React, it breaks UIs into smaller components that can be reused and then are rendered. This is the "frame" in which the UI components fit in. This is what is served through index.html</li>
+                <li><b>Welcome.js</b>: Just the welcome component that walks people through the app. It's good UX design to have something that brings context. This is part of Human-Computer Interaction design as well.</li>
+                <li><b>PatientInfo.js</b>:  This is where the camera takes a picture. You can use the vanilla javascript here, but since I had P5 running, I thought why not - it's easier. I've credited the source code for this on the file.</li>
+                <li><b>PatientIntake.js</b>:  <i>This is for further research into classification machine learning and human deterministic values like patient criticality</i></li>
+                <li><b>Vitals.js</b>:  This code is meant to be integrated later, but it shows how to use the Serial API to read from a Serial Port and then display it. </li>
+                <li><b>Image.js</b>:   This takes the image input and runs it through an OCR engine to pull text from images and then asks ChatGPT to parse it into JSON. </li>
+               </ol>
+
+               <p>I also included a bunch of code snippets, and some dummy images that you can use as controls in your own testing. <b>threshold.js</b> is how you would implement different sorts of filters before passing the canvas to TesseractJS</p>
+
+               All the files have  been documented so that you're able to follow along. 
+
+            </div>
+
+            <div class="cards">
+            
+                <p class="header">THE SOURCE CODE, PART II</p>
+            
+                This section explores the ins and outs of <code>PatientInfo.js</code>. This has been taken from <a href="https://editor.p5js.org/son/sketches/LuJ2eGf9p">this great sketch by P5 user <b>Son</b> </a>. 
+
+                <p><a href="https://stackoverflow.com/a/71369517">Where credit is due, this project should not be possible without this great Stackoverflow post on how to use P5 in react</a></p>
+
+                <p>React uses references to the sketch function, hence why it needs to be within the main component. However, we are going to discuss how this function works and how it feeds into <b>Image.js</b></p>
+
+                <code>
+function sketch (p5) {
+p5.setup = () => {
+button = p5.createButton('Take Photo').id("button"); //<b>1st: create a button called "snap" and allows for multiple tries</b>
+button.mousePressed(takesnap); <b>//when the button is pressed, call the function called "takesnap"</b>
+video = p5.createCapture(p5.VIDEO); <b>be sure to ALWAYS CALL p5 because we are creating an instance of this library it needs to be referenced.</b>
+video.size(500, 375);}
+
+function takesnap() {
+p5.createCanvas(500, 375).id("canvas");
+const canvas = document.getElementById("canvas");
+p5.image(video, 0, 0, 500, 375); //draw the image being captured on webcam 
+imageSnap = canvas.toDataURL();
+getImageSnap();}} //<b>getImageSnap() is a simple return function</b>
+                </code>
+
+
+            
+            </div>
+
+            <div class="cards">
+            
+                <p class="header">THE SOURCE CODE, PART III</p>
+            
+                <p>This is <i>a lot</i> going on in <b>Image.js</b>, so lets break it down:</p>
+                <ol>
+                    <li>We are receiving an image from PatientInfo for processing.</li>
+                    <li>We are then taking that image and if need be applying media processing (I'll talk about that in a second)</li>
+                    <li>Splitting that image in half</li>
+                    <li>Passing the deconstructed image to TesseractJS for it to read text from the image</li>
+                    <li>Returning that text as an array, and setting it as a string.</li>
+                    <li>Cleaning junk characters from that string.  Logos aren't understood, so it's best to try and cover your bases.</li>
+                    <li>Asking a VERY specific prompt to ChatGPT to complete using the completion API to parse into JSON</li>
+                    <li>Asking the user confirm and then pushing it.</li>
+                </ol>
+
+                <p><i>PHEW that is a lot</i>.  I won't go into all of it, because some of it is some human-computer interaction design / UX design but you'll see there are three commented out lines of code.</p>
+
+<code>// img.filter(p5.GRAY)
+//p5.image(img, 0, 0)
+// for image processing p5.filter(p5.THRESHOLD) --- please refer to the the threshold.js</code>
+
+                <p>These are <a href="https://p5js.org/reference/#/p5/filter"><i>Filters</i> in the P5 code</a> that can help with processing.  <a href="https://dev.to/mathewthe2/using-javascript-to-preprocess-images-for-ocr-1jc">This is a great tutorial as to why you need preprocessing.</a> But, if it's needed, why don't we use it?  Simple: I'm using a very high-def camera with a calibrated exposure.  Since there are more pixels, and it's automatically high-res, I don't need to update it.  However, since this is supposed to be camera agnostic, there is <i>logic</i> that can be implemented.</p>
+             
+            
+            </div>
+
+            <div class="cards">
+            
+                <p class="header">THE SOURCE CODE, PART IV TESSERACTJS</p>
+                <p><b>FYI THIS SECTION SCROLLS!!</b>We are going to breakdown what is happening in Image.js, specifically this code:</p>
+
+<code>
+const rectangles = [
+{
+left: 0,
+top: 0,
+width: canvas.width/2,
+height: canvas.height,
+},
+{
+left: (canvas.width/2),
+top: 0,
+width: canvas.width/2,
+height: canvas.height,
+}
+];
+
+(async () => {
+const worker = await createWorker({
+logger: m => setProgress(m.progress*100)
+});
+await worker.loadLanguage('eng');
+await worker.initialize('eng');
+await worker.setParameters({
+tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/0123456789:',
+preserve_interword_spaces: '0'
+
+})
+const values = [];
+console.log(rectangles.length)
+
+for (let i = 0; i < rectangles.length; i++)
+ { const { data: { text } }=await worker.recognize(canvas, { rectangle:
+rectangles[i] }); 
+values.push(text.replace(/(\n+)/g, "\n" ).replace(/(1\n|,\n| |,)/g, "" )); //clean up text to remove weird linebreaks } 
+... //this is just some console.logging 
+await worker.terminate();
+</code>
+
+There's a lot to cover!  This is from the TesseractJS examples page. This snippet: 
+
+<ol>
+    <li>Takes the canvas that we have outlined, and splits it in half. Most insurance cards and identification cards split their data down the middle. Insteaed of the OCR returnning multiple lines of text as one, this makes it easier to read.</li>
+    <li>It creates a worker that awaits input and then states that it's going to translate it from english (you can specify other languages) BUT we are just looking for alphanumeric values. Images and logos tend to show up as APPROXIMATIONs of what the model thinks they are.</li>
+    <li>For every rectangle (there are two), send back a promise of text that the model identifies.</li>
+    <li>Once that's completed, let's remove any extraneous line-breaks or weird symbols that we can recognize</li>
+    <li>Terminate the worker or its just going to run randomly.</li>
+</ol>
+
+<p>This is where I would reccomend testing out different images and filters from the P5 library.</p>
+
+Refer to the <a href="https://tesseract.projectnaptha.com/">TesseractJS github page for more examples!</a>
+
+<p>There is some logic that is not implemented in this demo that you can use if you're not sure if you need image processing</p>
+
+<code>(async () => {
+const worker = await createWorker({
+logger: m => setProgress(m.progress*100)
+});</code>
+
+<p>This code snippet says once you've created a worker, and you're ready to start working set the progress level based on the response to the API (logger:m).   Within <b>m</b> there is a field for <i>confidence</i>. Because the hierarchy of this code is that this resides <i>within</i> the p5 sketch, you can call <b>p5.img</b> within your tesseract function - just as long as you pass the new image to the <b>.recognize</b> call. So, your logic would be (pseudocode wise): </p>
+<code>
+    (async () => {
+    const worker = await createWorker({
+    logger: m => setConfidence(m.confidence)
+    });
+    await worker.loadLanguage('eng');
+    await worker.initialize('eng');
+    await worker.setParameters({
+    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/0123456789:',
+    preserve_interword_spaces: '0'
+    
+    })
+    ...  need something to determine the first pass and what the confidence rate is 
+ 
+        switch confidenceRate 
+
+        case x:
+            p5 filter 
+        case y
+            p5 filter
+        case z 
+        default: 
+
+        for (let i = 0; i < rectangles.length; i++) { const { data: { text } }=await worker.recognize(canvas, { rectangle:
+            rectangles[i] }); values.push(text.replace(/(\n+)/g, "\n" ).replace(/(1\n|,\n| |,)/g, "" )); //clean up text to
+            remove weird linebreaks } ... //this is just some console.logging await worker.terminate();}
+
+</code>
+
+<p>I won't spend too much time on the ChatGPT portion because I actually have to pay for it, it's documented. It's used to parse text and identify key-value pairs to push to a database or for easy reading in case you want to put it into a table.</p>
+            
+            </div>
+
+
+                    <div class="cards">
+                    
+                        <p class="header">FURTHER RESEARCH</p>
+                    
+                        <p>Vitals.js uses the experimental Chrome API Serial to read a serial port. There isn't much in there, since most of it is based off of an arduino. I couldn't get the quality of data that I thought was valuable but I did create the skeleton of how to display data from the Serial Port.</p>
+
+                        <p>Models for determining criticality, and start providing suggestions to teach the model.</p>
+
+                        <p>Want to learn more?  Contact me at <a href="https://www.wellokaylisten.com/contact-me">my website</a></p>
+                    
+                    
+                    </div>
 
         </div>
     </div>
